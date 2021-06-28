@@ -18,7 +18,7 @@ import org.cooder.mos.fs.FileSystem;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "touch")
+@Command(name = "touch", header = "Create the file.")
 public class Touch extends MosCommand {
     @Parameters(paramLabel = "<path>")
     private String path;

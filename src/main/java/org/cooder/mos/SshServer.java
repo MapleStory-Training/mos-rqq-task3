@@ -1,27 +1,25 @@
-/*
- * This file is part of MOS
- * <p>
- * Copyright (c) 2021 by cooder.org
- * <p>
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
 package org.cooder.mos;
 
 import org.cooder.mos.device.FileDisk;
-import org.cooder.mos.shell.Shell;
+import org.cooder.mos.ssh.SshServerService;
 
 import java.io.IOException;
 
-public class App {
+/**
+ * @author renqianqian
+ * @date 2021/6/20
+ */
+public class SshServer {
+
     public static void main(String[] args) throws IOException {
         FileDisk disk = new FileDisk("mos-disk");
         MosSystem.fileSystem().bootstrap(disk, false);
 
+        SshServerService sshServer = new SshServerService();
         try {
-            Shell shell = new Shell("/");
-            shell.loop();
+            sshServer.start();
         } finally {
+            sshServer.close();
             MosSystem.fileSystem().shutdown();
         }
     }

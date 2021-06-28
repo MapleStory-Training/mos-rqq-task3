@@ -13,7 +13,7 @@ import org.cooder.mos.api.MosFile;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "rm")
+@Command(name = "rm", header = "Remove the FILE(s).")
 public class Remove extends MosCommand {
     @Parameters(paramLabel = "<path>")
     private String path;

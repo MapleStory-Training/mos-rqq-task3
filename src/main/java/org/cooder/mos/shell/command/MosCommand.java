@@ -16,16 +16,9 @@
  */
 package org.cooder.mos.shell.command;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.util.concurrent.Callable;
-
 import org.cooder.mos.api.FileOutputStream;
 import org.cooder.mos.api.MosFile;
-import org.cooder.mos.fs.FileSystem;
 import org.cooder.mos.shell.Shell;
-
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.ColorScheme;
 import picocli.CommandLine.Help.Column;
@@ -34,6 +27,15 @@ import picocli.CommandLine.Help.TextTable;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.util.concurrent.Callable;
+
+import static org.cooder.mos.fs.IFileSystem.APPEND;
+import static org.cooder.mos.fs.IFileSystem.WRITE;
+
+@Command
 public abstract class MosCommand implements Callable<Integer> {
 
     @ParentCommand
@@ -47,9 +49,15 @@ public abstract class MosCommand implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        if (in == null)  in = shell.in;
-        if (out == null) out = shell.out;
-        if (err == null) err = shell.err;
+        if (in == null) {
+            in = shell.in;
+        }
+        if (out == null) {
+            out = shell.out;
+        }
+        if (err == null) {
+            err = shell.err;
+        }
 
         try {
             return runCommand();
@@ -62,25 +70,26 @@ public abstract class MosCommand implements Callable<Integer> {
 
     @Command(name = ">")
     public void redirect(@Parameters(paramLabel = "<path>") String path) throws IOException {
-        String[] paths = shell.absolutePath(path);
-        FileOutputStream fos = new FileOutputStream(new MosFile(paths), FileSystem.WRITE);
-        this.out = new PrintStream(fos);
-
-        try {
-            call();
-        } catch (Exception e) {
-            e.printStackTrace(out);
-        }
-
-        out.close();
-        out = shell.out;
+        redirectWithMode(path, WRITE);
     }
 
     @Command(name = ">>")
     public void redirectAppend(@Parameters(paramLabel = "<path>", description = "output file path") String path)
-                    throws IOException {
+            throws IOException {
+        redirectWithMode(path, APPEND);
+    }
+
+    private void redirectWithMode(String path, int mode) throws IOException {
         String[] paths = shell.absolutePath(path);
-        FileOutputStream fos = new FileOutputStream(new MosFile(paths), FileSystem.APPEND);
+        MosFile mosFile = new MosFile(paths);
+        if (mosFile.isDir()) {
+            if (err == null) {
+                this.err = shell.err;
+            }
+            err.println(path + ": is a directory");
+            return;
+        }
+        FileOutputStream fos = new FileOutputStream(mosFile, mode);
         this.out = new PrintStream(fos);
 
         try {

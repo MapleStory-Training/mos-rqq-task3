@@ -28,6 +28,7 @@ public class FileInputStream extends InputStream {
         return MosSystem.fileSystem().read(fd);
     }
 
+    @Override
     public void close() throws IOException {
         MosSystem.fileSystem().close(fd);
     }

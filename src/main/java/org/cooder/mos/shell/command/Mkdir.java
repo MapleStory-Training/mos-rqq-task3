@@ -14,7 +14,7 @@ import org.cooder.mos.fs.IFileSystem;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "mkdir")
+@Command(name = "mkdir", header = "Create the DIRECTORY, if they do not already exist.")
 public class Mkdir extends MosCommand {
     @Parameters(paramLabel = "<Directory Name>")
     private String name;

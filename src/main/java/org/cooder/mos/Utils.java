@@ -8,18 +8,21 @@
  */
 package org.cooder.mos;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import org.cooder.mos.fs.IFileSystem;
+
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.cooder.mos.fs.IFileSystem;
-
 public class Utils {
+
+    public static void closeAll(Closeable... res) {
+        for (Closeable re : res) {
+            close(re);
+        }
+    }
 
     public static void close(Closeable res) {
         try {
@@ -44,7 +47,17 @@ public class Utils {
             close(reader);
         }
     }
-    
+
+    public static void flush(OutputStream... streams) {
+        for (OutputStream s : streams) {
+            try {
+                s.flush();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+    }
+
     public static String[] normalizePath(String path) {
         List<String> ret = new ArrayList<>();
         String[] arr = path.split(IFileSystem.separator + "");

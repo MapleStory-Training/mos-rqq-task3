@@ -8,18 +8,21 @@
  */
 package org.cooder.mos.fs.fat16;
 
-import java.util.Arrays;
-
 import org.cooder.mos.fs.IFileSystem;
 import org.cooder.mos.fs.fat16.Layout.DirectoryEntry;
 
+import java.util.Arrays;
+
+import static org.cooder.mos.fs.fat16.Layout.DirectoryEntry.FILE_NAME_LENGTH;
+import static org.cooder.mos.fs.fat16.Layout.LfnEntry.SHORT_NAME_FLAG;
+
 public class DirectoryTreeNode {
-    private DirectoryEntry entry;
+    public DirectoryEntry entry;
     public final DirectoryTreeNode parent;
-    private DirectoryTreeNode[] children;
-    private int sectorIdx = -1;
-    private int sectorOffset = -1;
-    private boolean fold = true;
+    public DirectoryTreeNode[] children;
+    public int sectorIdx = -1;
+    public int sectorOffset = -1;
+    public boolean fold = true;
 
     public DirectoryTreeNode(DirectoryTreeNode parent, DirectoryEntry entry) {
         this.parent = parent;
@@ -108,10 +111,10 @@ public class DirectoryTreeNode {
             return null;
         }
 
-        DirectoryTreeNode node = null;
+        DirectoryTreeNode node;
         for (int i = 0; i < children.length; i++) {
             node = children[i];
-            if (nameEquals(node.entry, name)) {
+            if (node.nameEquals(name)) {
                 return node;
             }
         }
@@ -119,8 +122,11 @@ public class DirectoryTreeNode {
         return null;
     }
 
-    public static boolean nameEquals(DirectoryEntry entry, String fileName) {
-        return Arrays.equals(entry.fileName, string2ByteArray(fileName, DirectoryEntry.FILE_NAME_LENGTH));
+    public boolean nameEquals(String fileName) {
+        if (Layout.isLFN(entry.toBytes())) {
+            return false;
+        }
+        return Arrays.equals(entry.fileName, string2ByteArray(fileName, FILE_NAME_LENGTH));
     }
 
     public static byte[] string2ByteArray(String name, int length) {
@@ -145,7 +151,7 @@ public class DirectoryTreeNode {
         DirectoryTreeNode node = nextFreeNode();
         DirectoryEntry entry = node.entry;
 
-        byte[] b = string2ByteArray(name, DirectoryEntry.FILE_NAME_LENGTH);
+        byte[] b = string2ByteArray(name, FILE_NAME_LENGTH);
         System.arraycopy(b, 0, entry.fileName, 0, b.length);
         entry.attrs |= isDir ? DirectoryEntry.ATTR_MASK_DIR : 0;
         node.setWriteTime(System.currentTimeMillis());
@@ -199,12 +205,21 @@ public class DirectoryTreeNode {
         return null;
     }
 
-    private boolean isFree() {
+    public boolean isFree() {
+        if (Layout.isLFN(entry.toBytes())) {
+            return false;
+        }
         return entry.fileName[0] == 0;
     }
 
     public boolean valid() {
-        return entry != null && !isFree();
+        if (entry == null) {
+            return false;
+        }
+        if (Layout.isLFN(entry.toBytes())) {
+            return false;
+        }
+        return !isFree();
     }
 
     public void reset() {
@@ -232,5 +247,9 @@ public class DirectoryTreeNode {
 
     public int getFileSize() {
         return entry.fileSize;
+    }
+
+    public boolean containsUnknownInfo() {
+        return Arrays.equals(new byte[]{entry.fileName[FILE_NAME_LENGTH - 2]}, string2ByteArray(SHORT_NAME_FLAG, 1));
     }
 }

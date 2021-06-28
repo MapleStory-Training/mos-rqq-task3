@@ -10,6 +10,8 @@ package org.cooder.mos.fs.fat16;
 
 import java.nio.ByteBuffer;
 
+import static org.cooder.mos.fs.fat16.Layout.LfnEntry.ATTR_MASK_LFN;
+
 public class Layout {
     public static final int RESERVED_SECTORS = 1;
     public static final int NUM_OF_FAT_COPY = 2;
@@ -28,21 +30,21 @@ public class Layout {
 
     public static final int ROOT_DIRECTORY_REGION_START = FAT_REGION_START + FAT_REGION_SIZE;
     public static final int ROOT_DIRECTORY_REGION_SIZE = (ROOT_ENTRIES_COUNT * PER_DIRECTOR_ENTRY_SIZE)
-                    / PER_SECTOR_SIZE;
+            / PER_SECTOR_SIZE;
 
     public static final int DATA_REGION_START = ROOT_DIRECTORY_REGION_START + ROOT_DIRECTORY_REGION_SIZE;
     public static final int HEAD_CLUSTER_COUNT = DATA_REGION_START / SECTORS_PER_CLUSTER
-                    + ((DATA_REGION_START % SECTORS_PER_CLUSTER) == 0 ? 0 : 1);
+            + ((DATA_REGION_START % SECTORS_PER_CLUSTER) == 0 ? 0 : 1);
 
     /**
      * 引导扇区Layout，涉及到整形数的都是大端字节序
      */
     public static class BootSector {
         // 跳转指令，3 bytes
-        final byte[] jmpCode = new byte[] { (byte) 0xEB, 0x3C, (byte) 0x90 };
+        final byte[] jmpCode = new byte[]{(byte) 0xEB, 0x3C, (byte) 0x90};
 
         // Oem Name 8 bytes
-        final byte[] oemName = new byte[] { 'm', 'o', 's', '-', 'n', 'i', 'l', 0 };
+        final byte[] oemName = new byte[]{'m', 'o', 's', '-', 'r', 'q', 'q', 0};
 
         // 每扇区字节数，2 bytes
         final short sectorSize = PER_SECTOR_SIZE;
@@ -83,7 +85,7 @@ public class Layout {
 
         final byte[] volumeLabel = new byte[11];
 
-        final byte[] fileSystemType = new byte[] { 'F', 'A', 'T', '1', '6', 0, 0, 0 };
+        final byte[] fileSystemType = new byte[]{'F', 'A', 'T', '1', '6', 0, 0, 0};
 
         final byte[] bootstrapCode = new byte[448];
 
@@ -192,9 +194,78 @@ public class Layout {
             return e;
         }
 
+        @Override
         public String toString() {
             return String.format("filename: %s, startCluster: %d", new String(fileName), startingCluster);
         }
+    }
+
+    public static class LfnEntry extends DirectoryEntry {
+
+        public static final int PART_FILE_NAME_LENGTH = 30;
+
+        public static final String SHORT_NAME_FLAG = "~";
+
+        public static final byte ORDINAL_MASK_DEL = (byte) 0x80;
+        public static final byte ORDINAL_MASK_LAST = 0x40;
+        public static final byte ORDINAL_MASK_NUM = 0x3F;
+
+        public static final byte ATTR_MASK_LFN = 0x0F;
+
+        public byte ordinal;
+        public byte[] part1 = new byte[10];
+        public byte attrs;
+        public byte[] part2 = new byte[20];
+
+        @Override
+        public byte[] toBytes() {
+            ByteBuffer buf = ByteBuffer.allocateDirect(32);
+            buf.put(ordinal);
+            buf.put(part1);
+            buf.put(attrs);
+            buf.put(part2);
+
+            buf.rewind();
+
+            byte[] data = new byte[32];
+            buf.get(data);
+            return data;
+        }
+
+        public boolean last() {
+            return (ordinal & ORDINAL_MASK_LAST) != 0;
+        }
+
+        public int lfnNum() {
+            return ordinal & ORDINAL_MASK_NUM;
+        }
+
+        public static LfnEntry from(byte[] data) {
+            ByteBuffer buf = ByteBuffer.allocateDirect(32);
+            buf.put(data);
+            buf.rewind();
+
+            LfnEntry lfn = new LfnEntry();
+            lfn.ordinal = buf.get();
+            buf.get(lfn.part1, 0, 10);
+            lfn.attrs = buf.get();
+            buf.get(lfn.part2, 0, 20);
+
+            return lfn;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("filename part %d : %s", ordinal & ORDINAL_MASK_NUM, new String(part1) + new String(part2));
+        }
+    }
+
+    public static boolean isLFN(byte[] data) {
+        ByteBuffer buf = ByteBuffer.allocateDirect(32);
+        buf.put(data);
+        buf.rewind();
+        buf.position(11);
+        return (buf.get() & ATTR_MASK_LFN) == ATTR_MASK_LFN;
     }
 
     public static int getClusterDataStartSector(int clusterIdx) {

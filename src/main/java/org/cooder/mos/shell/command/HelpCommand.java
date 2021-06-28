@@ -10,6 +10,7 @@ package org.cooder.mos.shell.command;
 
 import java.io.PrintWriter;
 
+import org.cooder.mos.shell.Shell;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.ColorScheme;
@@ -27,10 +28,14 @@ public class HelpCommand implements IHelpCommandInitializable2, Runnable {
                     description = "The COMMAND to display the usage help message for.")
     private String[] commands = new String[0];
 
+    @CommandLine.ParentCommand
+    protected Shell shell;
+
     private CommandLine self;
     private PrintWriter out;
     private ColorScheme colorScheme;
 
+    @Override
     public void run() {
         CommandLine parent = self == null ? null : self.getParent();
         if (parent == null) {
@@ -53,6 +58,6 @@ public class HelpCommand implements IHelpCommandInitializable2, Runnable {
                     PrintWriter err) {
         this.self = helpCommandLine;
         this.colorScheme = colorScheme;
-        this.out = out;
+        this.out = new PrintWriter(shell.out);
     }
 }

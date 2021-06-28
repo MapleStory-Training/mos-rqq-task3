@@ -10,7 +10,7 @@ package org.cooder.mos.shell.command;
 
 import picocli.CommandLine.Command;
 
-@Command(name = "pwd")
+@Command(name = "pwd", header = "Print the name of the current working directory.")
 public class Pwd extends MosCommand {
 
     @Override

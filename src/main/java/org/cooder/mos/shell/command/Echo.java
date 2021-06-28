@@ -11,14 +11,14 @@ package org.cooder.mos.shell.command;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "echo")
+@Command(name = "echo", header = "Echo the STRING(s) to standard output.")
 public class Echo extends MosCommand {
     @Parameters(paramLabel = "<content>")
     private String content;
 
     @Override
     public int runCommand() {
-        out.print(content);
+        out.println(content);
         return 0;
     }
 }

@@ -14,12 +14,12 @@ import org.cooder.mos.api.MosFile;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.TextTable;
 
-@Command(name = "ls", aliases = { "ll" })
+@Command(name = "ls", aliases = {"ll"}, header = "List information about the FILEs (the current directory by default).")
 public class ListCommand extends MosCommand {
     @Override
     public int runCommand() {
-        TextTable textTable = forColumnWidths(10, 14, 15);
-        
+        TextTable textTable = forColumnWidths(10, 14, 100);
+
         String path = shell.currentPath();
         MosFile file = new MosFile(path);
         MosFile[] files = file.listFiles();
@@ -29,7 +29,7 @@ public class ListCommand extends MosCommand {
             String name = f.getName() + (f.isDir() ? "/" : "");
             textTable.addRowValues(size, time, name);
         }
-        out.println(textTable.toString());
+        out.print(textTable.toString());
         return 0;
     }
 }
